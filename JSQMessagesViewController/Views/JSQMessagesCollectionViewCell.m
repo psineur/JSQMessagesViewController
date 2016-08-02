@@ -63,6 +63,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 @property (assign, nonatomic) CGSize avatarViewSize;
 
 @property (weak, nonatomic, readwrite) UITapGestureRecognizer *tapGestureRecognizer;
+@property (weak, nonatomic, readwrite) UITapGestureRecognizer *doubleTapGestureRecognizer;
 
 - (void)jsq_handleTapGesture:(UITapGestureRecognizer *)tap;
 
@@ -137,9 +138,14 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
     self.messageBubbleTopLabelHeightConstraint.constant = messageBubbleTopLabelFont.pointSize;
     self.cellBottomLabelHeightConstraint.constant = bottomLabelFont.pointSize;
     
+    UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(jsq_handleDoubleTapGesture:)];
+    [self addGestureRecognizer:doubleTap];
+    self.doubleTapGestureRecognizer = doubleTap;
+    
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(jsq_handleTapGesture:)];
     [self addGestureRecognizer:tap];
     self.tapGestureRecognizer = tap;
+    [tap requireGestureRecognizerToFail:doubleTap];
 }
 
 - (void)configureAccessoryButton
@@ -165,6 +171,8 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 
     [_tapGestureRecognizer removeTarget:nil action:NULL];
     _tapGestureRecognizer = nil;
+    
+    [_doubleTapGestureRecognizer removeTarget:nil action:NULL];
 }
 
 #pragma mark - Collection view cell
@@ -382,6 +390,21 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 }
 
 #pragma mark - Gesture recognizers
+
+- (void)jsq_handleDoubleTapGesture:(UITapGestureRecognizer *)tap
+{
+    CGPoint touchPt = [tap locationInView:self];
+
+    if (CGRectContainsPoint(self.avatarContainerView.frame, touchPt)) {
+        [self.delegate messagesCollectionViewCellDidDoubleTapAvatar:self];
+    }
+    else if (CGRectContainsPoint(self.messageBubbleContainerView.frame, touchPt)) {
+        [self.delegate messagesCollectionViewCellDidDoubleTapMessageBubble:self];
+    }
+    else {
+        [self.delegate messagesCollectionViewCellDidDoubleTapCell:self atPosition:touchPt];
+    }
+}
 
 - (void)jsq_handleTapGesture:(UITapGestureRecognizer *)tap
 {
